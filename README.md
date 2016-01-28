@@ -18,11 +18,15 @@ code is licensed under the GNU General Public License 3.0.
 
 # Code Contributors
 
-Justin Hamilton
-Brian McGrath
-Jospeh Quigley
-Sue McClatchy
-Gary Churchill
+* Justin Hamilton
+
+* Brian McGrath
+
+* Jospeh Quigley
+
+* Sue McClatchy
+
+* Gary Churchill
 
 Contributions are mostly limited to group members and instructors, though if 
 you see a bug, feel free to submit a pull request!
