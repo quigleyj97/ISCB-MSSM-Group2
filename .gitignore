@@ -21,3 +21,6 @@ vignettes/*.pdf
 # vim swap files
 *.swp
 *.swo
+
+# Incoming data directory ignored due to possible legal concerns
+/data/in
