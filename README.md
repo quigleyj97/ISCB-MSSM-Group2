@@ -35,8 +35,8 @@ you see a bug, feel free to submit a pull request!
 
 This code is used in conjunction with our research project, *Sirt1 and the
 Glucagon Signaling Pathway* that studies the effects of Glucagon on diabetes
-in mice with the help of a dataset provided by the Alan D. Attie laboratory
-at the University of Wisconsin-Madison.
+in mice with the help of of the BTBR dataset provided by the Alan D. Attie 
+laboratory at the University of Wisconsin-Madison.
 
 # Technology
 
@@ -44,8 +44,10 @@ R is the coding language used for analysis, with the following libraries:
 
 * `R/qtl`
 
-* `ggplot`
+* `ggplot2`
+
+The following libraries are optional and are used for code testing:
+
+* `lintr`
 
 Additionally, we used `git` for version control.
-
-^^^^^TODO: ^^^^^add ^^^^^version ^^^^^numbers
