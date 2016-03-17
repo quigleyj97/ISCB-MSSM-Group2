@@ -22,6 +22,7 @@ load(file="BTBR.data.clean.Rdata")
 # IMPORTANT: Stops if grep doesn't return one gene
 # IMPORTANT: Must be run after the dataset is loaded
 # Side Effect: Accesses variables not passed as arguments
+# returns: islet gene expression
 load_islet <- function(gene) {
 	# Initial validity checks. If any of these fail, then
 	# the preconditions are not met. See comments above.
@@ -41,6 +42,7 @@ load_islet <- function(gene) {
 #            passed to this function.
 # IMPORTANT: f2g must exist and be a cross object
 # Side Effect: Accesses variables not passed as arguments
+# returns: new f2g$pheno
 prepare_for_scan <- function(clin_pheno, gene_pheno) {
 	# Precondition checks
 	stopifnot(exists(deparse(substitute(f2g))))
@@ -57,6 +59,7 @@ prepare_for_scan <- function(clin_pheno, gene_pheno) {
 
 
 # Side Effect: modifies variables not passed as arguments
+# returns: void
 panel.cor <- function(x, y, sigfigs=2, prefix="", sig_threshold=0.5,  cex.cor, ...) {
 	# To ensure non-destructive parameter changing
 	usr <- par("usr")
@@ -76,6 +79,7 @@ panel.cor <- function(x, y, sigfigs=2, prefix="", sig_threshold=0.5,  cex.cor, .
 }
 
 # Side Effect: modifies variables not passed as arguments
+# returns: void
 panel.hist <- function(x, ...)	{
 	usr <- par("usr")
 	on.exit(par(usr))
@@ -94,6 +98,41 @@ panel.hist <- function(x, ...)	{
 }
 
 # =====END Plotting functions
+
+# Fit causal models to a triplet with BIC scoring
+# Taken from atg.R written by Dr. Gary Churchill
+# (also refactored slightly)
+# If R is to be believed, this is a pure function
+#    But of course R being R we can't prove that
+triple.fit <- function(X, Y, Q)	{
+	# Remove NA rows
+	idx <- sort(unique(c(
+		which(is.na(X)),
+		which(is.na(Y)),
+		which(is.na(Q))
+	)))
+	
+
+	X <- X[-idx]
+	Y <- Y[-idx]
+	Q <- Q[-idx]
+
+	# The resulting X, Y, and Qs should not be empty
+	stopifnot(length(X) > 0)
+	stopifnot(length(Y) > 0)
+	stopifnot(length(Q) > 0)
+
+	scores <- c(
+		(BIC(lm(X~Q)) + BIC(lm(Y~Q))),  # Independent X<-Q->Y
+		(BIC(lm(X~Y)) + BIC(lm(Y~Q))),  # Reactive    Q->Y->X
+		(BIC(lm(X~Q)) + BIC(lm(Y~X))),  # Causal      Q->X->Y
+		(BIC(lm(X~Q)) + BIC(lm(Y~Q+X))) # Complex
+	)
+
+	names(scores) <- c("Independent", "Reactive", "Causal", "Complex")
+
+	scores
+}
 
 # ======== USER SPACE ========
 # Enter your code here: genes,
@@ -128,6 +167,7 @@ perm1 <- scanone(cross, pheno.col = (4+length(pheno)), addcovar = sex, method="h
 # plot 3 rows, 1 col
 par(mfrow=c(3,1))
 # Not sure what the magic number 2 is for
+# I *think* it's for removing the first 2 columns as they're useless to calculating perms
 for(i in 1:(length(scan1)-2))  {
 	plot(scan1, lodcolumn=i)
 	add.threshold(scan1, perms=perm1, alpha=0.05, lty="dashed", lwd=2, col="orange")
