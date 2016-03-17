@@ -22,5 +22,5 @@ vignettes/*.pdf
 *.swp
 *.swo
 
-# Incoming data directory ignored due to possible legal concerns
-/data/in
+# Ignoring dataset, don't want it on Github
+/BTBR.data.clean.Rdata
