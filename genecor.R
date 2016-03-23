@@ -1,6 +1,8 @@
 # genecor.R
 # R gene analysis script
 # Joe Quigley 2016 for ISCB 2015-16 at MSSM Group 2 with JAX Labs
+# Licensed under GNU General Public License 3.0
+#                      Free as in Freedom
 
 # depends on ggplot2 and qtl
 library(ggplot2)
@@ -47,9 +49,11 @@ load_expression <- function(gene, tissue) {
 # IMPORTANT: gene must exist in the cross
 # Side effect: Accesses variables not passed as arguments
 # Returns the scan results
-scan_cond_gene <- function(pheno, gene) {
-  # Ensure the gene exists
-  stopifnot(exists(deparse(substitute(cross$pheno[gene]))))
+scan_cond_gene <- function(gene, pheno) {
+  # Ensure the gene expression exists and has been processed
+  for (gene_i in gene)  {
+    stopifnot(exists(deparse(substitute(cross$pheno[gene_i]))))
+  }
   scanone(cross, pheno.col=pheno, addcovar=cross$pheno[gene])
 }
 
@@ -72,14 +76,6 @@ prepare_for_scan <- function(clin_pheno, gene_pheno) {
     f2g$pheno[,c("MouseNum","Sex","pgm")],
     phenotypes.rz[,clin_pheno],
     gene_pheno)
-}
-
-# I like me some functional programming
-# This ugly hack is mostly to better utilize lapply
-# Taken from: http://r.789695.n4.nabble.com/Partial-function-application-in-R-td886216.html
-bind <- function(f, ...) {
-   args <- list(...)
-   function(...) do.call(f, c(list(...), args))
 }
 
 # =====Plotting functions
@@ -156,13 +152,14 @@ triple.fit <- function(X, Y, Q) {
 # plotting, etc.
 # ============================
 
-pheno <- c("INS.10wk", "GLU.10wk", "TRIG.10wk")
-genes <- c("Irx3$", "Sirt1$", "Ptpn1$")
+pheno <- c("INS.10wk", "GLU.10wk")
+genes <- c("Irx3$", "Sirt1$")
 cond_genes <- c("Myt1l", "Cmpk2", "Cog5", "Colec11", "Efcab10", "Lpin1")
 # and others, there's no upper limit other than practical
 
 islet_expression <- lapply(genes, load_islet)
 names(islet_expression) <- genes
+cond_ids <- match(cond_genes, annot$gene1, nomatch=0)
 
 # Non-destructive, we don't have to reload f2g$pheno if we screw up
 cross <- f2g
@@ -179,11 +176,21 @@ cross_gp <- calc.genoprob(cross, step = 1)
 # Perform a QTL scan
 scan1 <- scanone(cross_gp, pheno.col = c(pheno, genes),
                  method = "hk", addcovar = sex)
-# ID LOD significance thresholds for gene expression traits
-# 4+length(pheno) is a magic number, we need to throw out the first 3 columns and 
-# ignore clinical phenotypes
-perm1 <- scanone(cross, pheno.col = (4 + length(pheno)),
-         addcovar = sex, method = "hk", n.perm = 100, perm.Xsp = TRUE)
+
+perms_filename <- paste(c("BTBR.perms",
+                        sort(c(genes, pheno)),
+                        "Rdata"), collapse=".")
+
+if(!file.exists(perms_filename))  {
+  # ID LOD significance thresholds for gene expression traits
+  # 4+length(pheno) is a magic number, we need to throw out the
+  # first 3 columns and ignore clinical phenotypes
+  perm1 <- scanone(cross_gp, pheno.col = (4 + length(pheno)),
+           addcovar = sex, method = "hk", n.perm = 100, perm.Xsp = TRUE)
+  save(perm1, file=perms_filename)
+} else {
+  perm1 <- load(file=perms_filename)
+}
 
 # plot 3 rows, 1 col
 par(mfrow = c(3,1))
@@ -192,18 +199,24 @@ par(mfrow = c(3,1))
 #   First two cols are chromosome and 'pos' ( I *think* peak )
 for(i in 1:(length(scan1) - 2))  {
   plot(scan1, lodcolumn = i)
+  title(main = paste(names(scan1)[i + 2], "expression"), ylab = "LOD")
   add.threshold(scan1, perms = perm1, alpha = 0.05,
                 lty = "dashed", lwd = 2, col = "orange")
   add.threshold(scan1, perms = perm1, alpha = 0.10,
                 lty = "dashed", lwd = 2, col = "purple")
 }
 
+# Add conditional genes to cross object
+cross$pheno <- cbind(cross$pheno,
+                     islet.rz[,match(cond_genes,
+                                     annot$gene1,
+                                     nomatch = 0)])
+
 # Bind our phenotypes of interest first
-cond_ins_sirt1 <- bind(cond_gene, c("INS.10wk", "Sirt1$"))
-cond_scans <- lapply(cond_genes, cond_ins_sirt1)
+cond_scans <- lapply(scan_cond_genes, cond_gene, c("INS.10wk", "Sirt1$"))
 
 # Magic number exists for the same reason as before
-for(i in 1:length(cond_scans) - 2)	{
+for(i in 1:length(cond_scans) - 2)  {
   plot(cond_scans, lodcolumn=i)
   add.threshold(scan1, perms = perm1, alpha = 0.05,
                 lty = "dashed", lwd = 2, col = "orange")
