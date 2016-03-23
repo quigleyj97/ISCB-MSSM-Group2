@@ -50,11 +50,7 @@ load_expression <- function(gene, tissue) {
 # Side effect: Accesses variables not passed as arguments
 # Returns the scan results
 scan_cond_gene <- function(gene, pheno) {
-  # Ensure the gene expression exists and has been processed
-  for (gene_i in gene)  {
-    stopifnot(exists(deparse(substitute(cross$pheno[gene_i]))))
-  }
-  scanone(cross, pheno.col=pheno, addcovar=cross$pheno[gene])
+  scanone(cross, pheno.col = pheno, addcovar = cross$pheno[gene])
 }
 
 # Again, same, but for 
@@ -212,8 +208,16 @@ cross$pheno <- cbind(cross$pheno,
                                      annot$gene1,
                                      nomatch = 0)])
 
+# Fix the names (currently the ones we added are named by the microarray probe ID
+names(cross$pheno)[(length(pheno) +
+                    length(genes) +
+		    4):length(cross$pheno)] <- annot$gene1[
+		    match(names(cros$pheno))[(length(pheno) +
+		                              length(genes) +
+					      4):(length(cross$pheno))
+
 # Bind our phenotypes of interest first
-cond_scans <- lapply(scan_cond_genes, cond_gene, c("INS.10wk", "Sirt1$"))
+cond_scans <- lapply(cond_genes, scan_cond_gene, c("INS.10wk", "Sirt1$"))
 
 # Magic number exists for the same reason as before
 for(i in 1:length(cond_scans) - 2)  {
