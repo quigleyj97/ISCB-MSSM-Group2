@@ -148,6 +148,8 @@ triple.fit <- function(X, Y, Q) {
 # plotting, etc.
 # ============================
 
+pdf("genecor_graphs.pdf")
+
 pheno <- c("INS.10wk", "GLU.10wk")
 genes <- c("Irx3$", "Sirt1$")
 cond_genes <- c("Myt1l", "Cmpk2", "Cog5", "Colec11", "Efcab10", "Lpin1")
@@ -194,12 +196,18 @@ par(mfrow = c(3,1))
 # I *think* it's for removing the first 2 columns as they're not meant for plotting
 #   First two cols are chromosome and 'pos' ( I *think* peak )
 for(i in 1:(length(scan1) - 2))  {
-  plot(scan1, lodcolumn = i)
-  title(main = paste(names(scan1)[i + 2], "expression"), ylab = "LOD")
+  plot(scan1, lodcolumn = i, ylab="LOD")
+  title(main = paste(names(scan1)[i + 2], "expression"))
   add.threshold(scan1, perms = perm1, alpha = 0.05,
                 lty = "dashed", lwd = 2, col = "orange")
   add.threshold(scan1, perms = perm1, alpha = 0.10,
                 lty = "dashed", lwd = 2, col = "purple")
+}
+
+# Because plot has decided that it is above page breaks,
+# we have to make our own.
+for(i in 1:((length(scan1) - 2) %% 3)) {
+  frame()
 }
 
 # Add conditional genes to cross object
@@ -211,18 +219,42 @@ cross$pheno <- cbind(cross$pheno,
 # Fix the names (currently the ones we added are named by the microarray probe ID
 # 4 is to ignore first 3 cols of cross$pheno
 range <- (length(pheno) + length(genes) + 4):(ncol(cross$pheno))
-names(cross$pheno)[range] <- annot$gene1[match(names(cross$pheno)[range], annot$a_gene_id)]
+names(cross$pheno)[range] <- annot$gene1[match(names(cross$pheno)[range],
+                                         annot$a_gene_id)]
 
 # Run conditional scans on all the conditional genes with our phenotypes of interest
 cond_scans <- lapply(cond_genes, scan_cond_gene, c("INS.10wk", "Sirt1$"))
 
+gene_idx <- 0
+
+# Now we're gonna plot expression vs conditioned
+par(mfcol=c(4, 1))
+
 # Magic number exists for the same reason as before
-for(i in cond_scans)  {
-    for(k in 1:(length(i) - 2)) {
-      plot(cond_scans, lodcolumn=i)
-      add.threshold(scan1, perms = perm1, alpha = 0.05,
-                    lty = "dashed", lwd = 2, col = "orange")
-      add.threshold(scan1, perms = perm1, alpha = 0.10,
-                    lty = "dashed", lwd = 2, col = "purple")
-    }
+for (i in cond_scans)  {
+  # Plot the normal expressions to compare
+  plot(scan1, lodcolumn = 1)
+  title("INS.10wk expression")
+  add.threshold(scan1, perms = perm1, alpha = 0.05,
+                lty = "dashed", lwd = 2, col = "orange")
+  add.threshold(scan1, perms = perm1, alpha = 0.10,
+                lty = "dashed", lwd = 2, col = "purple")
+  plot(scan1, lodcolumn = 2)
+  title("Sirt1 expression")
+  add.threshold(scan1, perms = perm1, alpha = 0.05,
+                lty = "dashed", lwd = 2, col = "orange")
+  add.threshold(scan1, perms = perm1, alpha = 0.10,
+                lty = "dashed", lwd = 2, col = "purple")
+  gene_idx <- gene_idx + 1
+  for (k in 1:(length(i) - 2)) {
+    plot(i, lodcolumn=k)
+    title(main = paste(names(i)[k + 2], "expression conditioned on",
+                       cond_genes[gene_idx]))
+    add.threshold(scan1, perms = perm1, alpha = 0.05,
+                  lty = "dashed", lwd = 2, col = "orange")
+    add.threshold(scan1, perms = perm1, alpha = 0.10,
+                  lty = "dashed", lwd = 2, col = "purple")
+  }
 }
+
+dev.off()
