@@ -209,21 +209,20 @@ cross$pheno <- cbind(cross$pheno,
                                      nomatch = 0)])
 
 # Fix the names (currently the ones we added are named by the microarray probe ID
-names(cross$pheno)[(length(pheno) +
-                    length(genes) +
-		    4):length(cross$pheno)] <- annot$gene1[
-		    match(names(cros$pheno))[(length(pheno) +
-		                              length(genes) +
-					      4):(length(cross$pheno))
+# 4 is to ignore first 3 cols of cross$pheno
+range <- (length(pheno) + length(genes) + 4):(ncol(cross$pheno))
+names(cross$pheno)[range] <- annot$gene1[match(names(cross$pheno)[range], annot$a_gene_id)]
 
-# Bind our phenotypes of interest first
+# Run conditional scans on all the conditional genes with our phenotypes of interest
 cond_scans <- lapply(cond_genes, scan_cond_gene, c("INS.10wk", "Sirt1$"))
 
 # Magic number exists for the same reason as before
-for(i in 1:length(cond_scans) - 2)  {
-  plot(cond_scans, lodcolumn=i)
-  add.threshold(scan1, perms = perm1, alpha = 0.05,
-                lty = "dashed", lwd = 2, col = "orange")
-  add.threshold(scan1, perms = perm1, alpha = 0.10,
-                lty = "dashed", lwd = 2, col = "purple")
+for(i in cond_scans)  {
+    for(k in 1:(length(i) - 2)) {
+      plot(cond_scans, lodcolumn=i)
+      add.threshold(scan1, perms = perm1, alpha = 0.05,
+                    lty = "dashed", lwd = 2, col = "orange")
+      add.threshold(scan1, perms = perm1, alpha = 0.10,
+                    lty = "dashed", lwd = 2, col = "purple")
+    }
 }
