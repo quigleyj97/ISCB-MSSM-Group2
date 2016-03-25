@@ -239,7 +239,7 @@ for (i in cond_scans)  {
                 lty = "dashed", lwd = 2, col = "orange")
   add.threshold(scan1, perms = perm1, alpha = 0.10,
                 lty = "dashed", lwd = 2, col = "purple")
-  plot(scan1, lodcolumn = 2)
+  plot(scan1, lodcolumn = 4)
   title("Sirt1 expression")
   add.threshold(scan1, perms = perm1, alpha = 0.05,
                 lty = "dashed", lwd = 2, col = "orange")
