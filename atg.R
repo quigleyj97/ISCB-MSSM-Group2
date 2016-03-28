@@ -1,5 +1,5 @@
-# The following code is contributed by Sue McClatchy and is thus
-# not under the purview of the project license, as described in
+# The following code is contributed by Sue McClatchy and Gary Churchill
+# and is thus not under the purview of the project license, as described in
 # README.md
 
 #------------------------------------------------------------------------------

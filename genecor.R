@@ -142,7 +142,6 @@ triple.fit <- function(X, Y, Q) {
   scores
 }
 
-
 # ======== USER SPACE ========
 # Enter your code here: genes,
 # plotting, etc.
@@ -151,7 +150,7 @@ triple.fit <- function(X, Y, Q) {
 pdf("genecor_graphs.pdf")
 
 pheno <- c("INS.10wk", "GLU.10wk")
-genes <- c("Irx3$", "Sirt1$")
+genes <- c("Irx3", "Sirt1", "Ptpn1$")
 cond_genes <- c("Myt1l", "Cmpk2", "Cog5", "Colec11", "Efcab10", "Lpin1")
 # and others, there's no upper limit other than practical
 
@@ -169,10 +168,10 @@ pairs(cross$pheno[, 4:length(cross$pheno)],
 
 # Sex as a covariate
 sex <- as.numeric(cross$pheno$Sex)
-cross_gp <- calc.genoprob(cross, step = 1)
+cross <- calc.genoprob(cross, step = 1)
 
 # Perform a QTL scan
-scan1 <- scanone(cross_gp, pheno.col = c(pheno, genes),
+scan1 <- scanone(cross, pheno.col = c(pheno, genes),
                  method = "hk", addcovar = sex)
 
 perms_filename <- paste(c("BTBR.perms",
@@ -183,7 +182,7 @@ if(!file.exists(perms_filename))  {
   # ID LOD significance thresholds for gene expression traits
   # 4+length(pheno) is a magic number, we need to throw out the
   # first 3 columns and ignore clinical phenotypes
-  perm1 <- scanone(cross_gp, pheno.col = (4 + length(pheno)),
+  perm1 <- scanone(cross, pheno.col = (4 + length(pheno)),
            addcovar = sex, method = "hk", n.perm = 100, perm.Xsp = TRUE)
   save(perm1, file=perms_filename)
 } else {
@@ -223,7 +222,7 @@ names(cross$pheno)[range] <- annot$gene1[match(names(cross$pheno)[range],
                                          annot$a_gene_id)]
 
 # Run conditional scans on all the conditional genes with our phenotypes of interest
-cond_scans <- lapply(cond_genes, scan_cond_gene, c("INS.10wk", "Sirt1$"))
+cond_scans <- lapply(cond_genes, scan_cond_gene, c("INS.10wk", "Sirt1"))
 
 gene_idx <- 0
 
@@ -257,4 +256,39 @@ for (i in cond_scans)  {
   }
 }
 
+#======================
+# Now for some qplots!
+# IMPORTANT: This isn't documented in other scripts, but be sure to do
+# them on the same chromosome, close to the peak!!!!!!!
+
+# Fill in the missing genotype data
+cross <- fill.geno(cross, method="argmax")
+
+# HERE BE DRAGONS
+# Seriously this is the only part of the code that isn't plug-and-chug
+# You *will* need to replace these magic numbers
+
+# 12 (or Q12) is the chromosome our shared peak of interest is on
+# In find.marker: 12 is chr, 9.77 is the location of the Sirt1 peak
+cross$pheno <- transform(cross$pheno,
+      Q12 = as.factor(cross$geno[[12]]$data[,find.marker(cross,12,9.77)]))
+levels(cross$pheno$Q12) <- c("B", "H", "R")
+
+print(qplot(Sirt1, Cmpk2, color=Q12, shape=Sex, data=cross$pheno) +
+  geom_smooth(aes(group=Q12),method="lm",se=FALSE))
+
+print(qplot(INS.10wk, Cmpk2, color=Q12, shape=Sex, data=cross$pheno) +
+  geom_smooth(aes(group=Q12),method="lm",se=FALSE))
+
+print(qplot(Sirt1, Lpin1, color=Q12, shape=Sex, data=cross$pheno) +
+  geom_smooth(aes(group=Q12),method="lm",se=FALSE))
+
+print(qplot(INS.10wk, Lpin1, color=Q12, shape=Sex, data=cross$pheno) +
+  geom_smooth(aes(group=Q12),method="lm",se=FALSE))
+
+print(qplot(Sirt1, Cog5, color=Q12, shape=Sex, data=cross$pheno) +
+  geom_smooth(aes(group=Q12),method="lm",se=FALSE))
+
+print(qplot(INS.10wk, Cog5, color=Q12, shape=Sex, data=cross$pheno) +
+  geom_smooth(aes(group=Q12),method="lm",se=FALSE))
 dev.off()
