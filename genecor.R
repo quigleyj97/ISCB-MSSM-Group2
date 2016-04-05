@@ -270,11 +270,11 @@ cross <- fill.geno(cross, method="argmax")
 # Seriously this is the only part of the code that isn't plug-and-chug
 # You *will* need to replace these magic numbers
 
-# 12 (or Q12) is the chromosome our shared peak of interest is on
-# In find.marker: 12 is chr, 9.77 is the location of the Sirt1 peak
+# 17 (or Q17) is the chromosome our shared peak of interest is on
+# In find.marker: 17 is chr, 18.97 is the location of the Sirt1 peak
 cross$pheno <- transform(cross$pheno,
       Q17 = as.factor(cross$geno[[17]]$data[,find.marker(cross,17,18.97)]))
-levels(cross$pheno$Q12) <- c("B", "H", "R")
+levels(cross$pheno$Q17) <- c("B", "H", "R")
 
 qplots <- function(traitx, traity, group, ...)	{
   qplot(cross$phenop[traitx], cross$pheno[traity], xlab = traitx, ylab = traity, color=group, shape=Sex, ...) +
@@ -290,7 +290,7 @@ anovae <- function(trait, mediator)  {
 
 #print(qplot(sirt1, cmpk2, color=q12, shape=sex, data=cross$pheno) +
 #  geom_smooth(aes(group=q12),method="lm",se=false))
-#qplots(Sirt1, Cmpk2, Q12)
+#qplots(Sirt1, Cmpk2, Q17)
 #print(qplot(ins.10wk, cmpk2, color=q12, shape=sex, data=cross$pheno) +
 #  geom_smooth(aes(group=q12),method="lm",se=false))
 
@@ -309,7 +309,7 @@ anovae <- function(trait, mediator)  {
 #print(qplot(irx3, lpin1, color=q12, shape=sex, data=cross$pheno) +
 #  geom_smooth(aes(group=q12),method="lm",se=false))
 #
-#print(qplot(Irx3, Cog5, color=Q12, shape=Sex, data=cross$pheno) +
-#  geom_smooth(aes(group=Q12),method="lm",se=FALSE))
+#print(qplot(Irx3, Cog5, color=Q17, shape=Sex, data=cross$pheno) +
+#  geom_smooth(aes(group=Q17),method="lm",se=FALSE))
 
 dev.off()
