@@ -273,7 +273,7 @@ cross <- fill.geno(cross, method="argmax")
 # 12 (or Q12) is the chromosome our shared peak of interest is on
 # In find.marker: 12 is chr, 9.77 is the location of the Sirt1 peak
 cross$pheno <- transform(cross$pheno,
-      Q12 = as.factor(cross$geno[[12]]$data[,find.marker(cross,12,9.77)]))
+      Q17 = as.factor(cross$geno[[17]]$data[,find.marker(cross,17,18.97)]))
 levels(cross$pheno$Q12) <- c("B", "H", "R")
 
 qplots <- function(traitx, traity, group, ...)	{
@@ -282,21 +282,15 @@ qplots <- function(traitx, traity, group, ...)	{
 }
 
 anovae <- function(trait, mediator)  {
-  print(anova(lm(trait ~ Sex + Q12, data=cross$pheno)))
-  print(anova(lm(mediator ~ Sex + Q12, data=cross$pheno)))
-  print(anova(lm(trait ~ Sex + mediator + Q12, data=cross$pheno)))
-  print(anova(lm(mediator ~ Sex + trait + Q12, data=cross$pheno)))
+  print(anova(lm(trait ~ Sex + Q17, data=cross$pheno)))
+  print(anova(lm(mediator ~ Sex + Q17, data=cross$pheno)))
+  print(anova(lm(trait ~ Sex + mediator + Q17, data=cross$pheno)))
+  print(anova(lm(mediator ~ Sex + trait + Q17, data=cross$pheno)))
 }
-
-
-print(anova(lm(Sirt1 ~ Sex + Q12, data=cross$pheno)))
-print(anova(lm(Cog5 ~ Sex + Q12, data=cross$pheno)))
-print(anova(lm(Sirt1 ~ Sex + Cog5 + Q12, data=cross$pheno)))
-print(anova(lm(Cog5 ~ Sex + Sirt1 + Q12, data=cross$pheno)))
 
 #print(qplot(sirt1, cmpk2, color=q12, shape=sex, data=cross$pheno) +
 #  geom_smooth(aes(group=q12),method="lm",se=false))
-qplots(Sirt1, Cmpk2, Q12)
+#qplots(Sirt1, Cmpk2, Q12)
 #print(qplot(ins.10wk, cmpk2, color=q12, shape=sex, data=cross$pheno) +
 #  geom_smooth(aes(group=q12),method="lm",se=false))
 
