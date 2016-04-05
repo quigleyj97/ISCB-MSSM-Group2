@@ -147,10 +147,12 @@ triple.fit <- function(X, Y, Q) {
 # plotting, etc.
 # ============================
 
-pdf("genecor_graphs.pdf")
+dpi <- 300
+#png("genecor_graphs_%d.png", width=6*dpi, height=6*dpi, res=dpi)
+pdf("genecor_graphs.pdf", 8.5, 11)
 
 pheno <- c("INS.10wk", "GLU.10wk")
-genes <- c("Irx3", "Sirt1", "Ptpn1$")
+genes <- c("Irx3", "Sirt1", "Ptpn1$", "Sox17", "Pdx1", "Neurog3", "Ptf1a", "Nkx6-1", "Nkx2-2$")
 cond_genes <- c("Myt1l", "Cmpk2", "Cog5", "Colec11", "Efcab10", "Lpin1")
 # and others, there's no upper limit other than practical
 
@@ -274,21 +276,46 @@ cross$pheno <- transform(cross$pheno,
       Q12 = as.factor(cross$geno[[12]]$data[,find.marker(cross,12,9.77)]))
 levels(cross$pheno$Q12) <- c("B", "H", "R")
 
-print(qplot(Sirt1, Cmpk2, color=Q12, shape=Sex, data=cross$pheno) +
-  geom_smooth(aes(group=Q12),method="lm",se=FALSE))
+qplots <- function(traitx, traity, group, ...)	{
+  qplot(cross$phenop[traitx], cross$pheno[traity], xlab = traitx, ylab = traity, color=group, shape=Sex, ...) +
+  geom_smooth(aes(group=group),method="lm",se=FALSE)
+}
 
-print(qplot(INS.10wk, Cmpk2, color=Q12, shape=Sex, data=cross$pheno) +
-  geom_smooth(aes(group=Q12),method="lm",se=FALSE))
+anovae <- function(trait, mediator)  {
+  print(anova(lm(trait ~ Sex + Q12, data=cross$pheno)))
+  print(anova(lm(mediator ~ Sex + Q12, data=cross$pheno)))
+  print(anova(lm(trait ~ Sex + mediator + Q12, data=cross$pheno)))
+  print(anova(lm(mediator ~ Sex + trait + Q12, data=cross$pheno)))
+}
 
-print(qplot(Sirt1, Lpin1, color=Q12, shape=Sex, data=cross$pheno) +
-  geom_smooth(aes(group=Q12),method="lm",se=FALSE))
 
-print(qplot(INS.10wk, Lpin1, color=Q12, shape=Sex, data=cross$pheno) +
-  geom_smooth(aes(group=Q12),method="lm",se=FALSE))
+print(anova(lm(Sirt1 ~ Sex + Q12, data=cross$pheno)))
+print(anova(lm(Cog5 ~ Sex + Q12, data=cross$pheno)))
+print(anova(lm(Sirt1 ~ Sex + Cog5 + Q12, data=cross$pheno)))
+print(anova(lm(Cog5 ~ Sex + Sirt1 + Q12, data=cross$pheno)))
 
-print(qplot(Sirt1, Cog5, color=Q12, shape=Sex, data=cross$pheno) +
-  geom_smooth(aes(group=Q12),method="lm",se=FALSE))
+#print(qplot(sirt1, cmpk2, color=q12, shape=sex, data=cross$pheno) +
+#  geom_smooth(aes(group=q12),method="lm",se=false))
+qplots(Sirt1, Cmpk2, Q12)
+#print(qplot(ins.10wk, cmpk2, color=q12, shape=sex, data=cross$pheno) +
+#  geom_smooth(aes(group=q12),method="lm",se=false))
 
-print(qplot(INS.10wk, Cog5, color=Q12, shape=Sex, data=cross$pheno) +
-  geom_smooth(aes(group=Q12),method="lm",se=FALSE))
+#print(qplot(sirt1, lpin1, color=q12, shape=sex, data=cross$pheno) +
+#  geom_smooth(aes(group=q12),method="lm",se=false))
+#
+#print(qplot(ins.10wk, lpin1, color=q12, shape=sex, data=cross$pheno) +
+#  geom_smooth(aes(group=q12),method="lm",se=false))
+#
+#print(qplot(sirt1, cog5, color=q12, shape=sex, data=cross$pheno) +
+#  geom_smooth(aes(group=q12),method="lm",se=false))
+#
+#print(qplot(ins.10wk, cog5, color=q12, shape=sex, data=cross$pheno) +
+#  geom_smooth(aes(group=q12),method="lm",se=false))
+#
+#print(qplot(irx3, lpin1, color=q12, shape=sex, data=cross$pheno) +
+#  geom_smooth(aes(group=q12),method="lm",se=false))
+#
+#print(qplot(Irx3, Cog5, color=Q12, shape=Sex, data=cross$pheno) +
+#  geom_smooth(aes(group=Q12),method="lm",se=FALSE))
+
 dev.off()
