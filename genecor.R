@@ -36,7 +36,7 @@ load_islet <- function(gene) {
 
 # Same as load_islet but general case
 # IMPORTANT: tissue must be valid tissue
-load_expression <- function(gene, tissue) {
+load_tissue <- function(gene, tissue) {
   stopifnot(exists(deparse(substitute(annot))))
   stopifnot(exists(deparse(substitute(tissue))))
   gene_id <- grep(gene, annot$gene1)
@@ -80,7 +80,7 @@ prepare_for_scan <- function(clin_pheno, gene_pheno) {
 # Side Effect: modifies variables not passed as arguments
 # returns: void
 panel.cor <- function(x, y, sigfigs=2, prefix="",
-                      sig_threshold=0.5,  cex.cor, ...) {
+                      sig_threshold=0.2,  cex.cor, ...) {
   # To ensure non-destructive parameter changing
   usr <- par("usr")
   on.exit(par(usr))
@@ -148,22 +148,29 @@ triple.fit <- function(X, Y, Q) {
 # ============================
 
 dpi <- 300
-#png("genecor_graphs_%d.png", width=6*dpi, height=6*dpi, res=dpi)
-pdf("genecor_graphs.pdf", 8.5, 11)
+png("images/genecor_graphs_%d.png", width=6*dpi, height=6*dpi, res=dpi)
+#pdf("genecor_graphs.pdf", 8.5, 11)
 
-pheno <- c("INS.10wk", "GLU.10wk")
-genes <- c("Irx3", "Sirt1", "Ptpn1$", "Sox17", "Pdx1", "Neurog3", "Ptf1a", "Nkx6-1", "Nkx2-2$")
+pheno <- c("INS.10wk")
+genes <- c("Irx3", "Sirt1", "Foxo1", "Pdx1", "Ppargc1a")
 cond_genes <- c("Myt1l", "Cmpk2", "Cog5", "Colec11", "Efcab10", "Lpin1")
 # and others, there's no upper limit other than practical
 
 islet_expression <- lapply(genes, load_islet)
-names(islet_expression) <- genes
+#kidney_expression <- lapply(genes, load_tissue, kidney.rz)
+#liver_expression <- lapply(genes, load_tissue, liver.rz)
+names(islet_expression) <- sapply(genes, paste0, "_islet", USE.NAMES=FALSE)
+#names(liver_expression) <- sapply(genes, paste0, "_liver", USE.NAMES=FALSE)
+#names(kidney_expression) <- sapply(genes, paste0, "_kidney", USE.NAMES=FALSE)
 cond_ids <- match(cond_genes, annot$gene1, nomatch=0)
 
+expressions <- islet_expression#c(islet_expression, kidney_expression, liver_expression)
+
+genes <- names(expressions)
 # Non-destructive, we don't have to reload f2g$pheno if we screw up
 cross <- f2g
-cross$pheno <- prepare_for_scan(pheno, islet_expression)
-
+cross$pheno <- prepare_for_scan(pheno, expressions)
+names(cross$pheno)[4] = "INS.10wk"
 # 4 in 4:length(cross) is a magic number, we don't want the first 3 for pairwise scans
 pairs(cross$pheno[, 4:length(cross$pheno)],
       upper.panel = panel.cor, diag.panel = panel.hist)
@@ -176,9 +183,10 @@ cross <- calc.genoprob(cross, step = 1)
 scan1 <- scanone(cross, pheno.col = c(pheno, genes),
                  method = "hk", addcovar = sex)
 
-perms_filename <- paste(c("BTBR.perms",
-                        sort(c(genes, pheno)),
-                        "Rdata"), collapse=".")
+perms_filename <- "BTBR.perms.Rdata"
+                  #paste(c("BTBR.perms",
+                  #      sort(c(genes, pheno)),
+                  #      "Rdata"), collapse=".")
 
 if(!file.exists(perms_filename))  {
   # ID LOD significance thresholds for gene expression traits
@@ -207,7 +215,7 @@ for(i in 1:(length(scan1) - 2))  {
 
 # Because plot has decided that it is above page breaks,
 # we have to make our own.
-for(i in 1:((length(scan1) - 2) %% 3)) {
+for(i in (1:((length(scan1) - 2) %% 3))) {
   frame()
 }
 
@@ -224,12 +232,12 @@ names(cross$pheno)[range] <- annot$gene1[match(names(cross$pheno)[range],
                                          annot$a_gene_id)]
 
 # Run conditional scans on all the conditional genes with our phenotypes of interest
-cond_scans <- lapply(cond_genes, scan_cond_gene, c("INS.10wk", "Sirt1"))
+cond_scans <- lapply(cond_genes, scan_cond_gene, c("INS.10wk", "Sirt1_islet", "Pdx1_islet", "Foxo1_islet"))
 
 gene_idx <- 0
 
 # Now we're gonna plot expression vs conditioned
-par(mfcol=c(4, 1))
+par(mfcol=c(4, 2))
 
 # Magic number exists for the same reason as before
 for (i in cond_scans)  {
@@ -240,8 +248,23 @@ for (i in cond_scans)  {
                 lty = "dashed", lwd = 2, col = "orange")
   add.threshold(scan1, perms = perm1, alpha = 0.10,
                 lty = "dashed", lwd = 2, col = "purple")
-  plot(scan1, lodcolumn = 4)
+  
+  plot(scan1, lodcolumn = 3)
   title("Sirt1 expression")
+  add.threshold(scan1, perms = perm1, alpha = 0.05,
+                lty = "dashed", lwd = 2, col = "orange")
+  add.threshold(scan1, perms = perm1, alpha = 0.10,
+                lty = "dashed", lwd = 2, col = "purple")
+  
+  plot(scan1, lodcolumn = 5)
+  title("Pdx1 expression")
+  add.threshold(scan1, perms = perm1, alpha = 0.05,
+                lty = "dashed", lwd = 2, col = "orange")
+  add.threshold(scan1, perms = perm1, alpha = 0.10,
+                lty = "dashed", lwd = 2, col = "purple")
+  
+  plot(scan1, lodcolumn = 4)
+  title("Foxo1 expression")
   add.threshold(scan1, perms = perm1, alpha = 0.05,
                 lty = "dashed", lwd = 2, col = "orange")
   add.threshold(scan1, perms = perm1, alpha = 0.10,
@@ -277,7 +300,7 @@ cross$pheno <- transform(cross$pheno,
 levels(cross$pheno$Q12) <- c("B", "H", "R")
 
 qplots <- function(traitx, traity, group, ...)	{
-  qplot(cross$phenop[traitx], cross$pheno[traity], xlab = traitx, ylab = traity, color=group, shape=Sex, ...) +
+  qplot(traitx, traity, color=group, shape=cross$pheno$Sex, ...) +
   geom_smooth(aes(group=group),method="lm",se=FALSE)
 }
 
@@ -289,14 +312,11 @@ anovae <- function(trait, mediator)  {
 }
 
 
-print(anova(lm(Sirt1 ~ Sex + Q12, data=cross$pheno)))
-print(anova(lm(Cog5 ~ Sex + Q12, data=cross$pheno)))
-print(anova(lm(Sirt1 ~ Sex + Cog5 + Q12, data=cross$pheno)))
-print(anova(lm(Cog5 ~ Sex + Sirt1 + Q12, data=cross$pheno)))
 
 #print(qplot(sirt1, cmpk2, color=q12, shape=sex, data=cross$pheno) +
 #  geom_smooth(aes(group=q12),method="lm",se=false))
-qplots(Sirt1, Cmpk2, Q12)
+with(cross$pheno, print(qplots(Sirt1_islet, Cmpk2, Q12)))
+with(cross$pheno, print(qplots(Sirt1_islet, Cog5, Q12)))
 #print(qplot(ins.10wk, cmpk2, color=q12, shape=sex, data=cross$pheno) +
 #  geom_smooth(aes(group=q12),method="lm",se=false))
 
