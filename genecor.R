@@ -74,6 +74,30 @@ prepare_for_scan <- function(clin_pheno, gene_pheno) {
     gene_pheno)
 }
 
+# Creates a qplot. Mostly utility to simplify the number of arguments
+# that need to be written out, there isn't really a whole lot
+# that changes between qplot calls
+# IMPORTANT: This function doesn't do any validity checks
+# Side Effect: Accesses variables not passed as arguments
+# Side Effect: plots
+qplots <- function(traitx, traity, group, ...) {
+  qplot(traitx, traity, color=group, shape=cross$pheno$Sex, ...) +
+  geom_smooth(aes(group=group),method="lm",se=FALSE)
+}
+
+# Another utility function to save on writing. This finds all the
+# ANOVA stuff for finding if a conditional gene meets the conditions
+# for being a mediator.
+# IMPORTANT: This function doesn't do any validity checks
+# Side Effect: Accesses variables not passed as arguments
+# Side Effect: Prints to STDOUT
+anovae <- function(trait, mediator, group=Q12) {
+  print(anova(lm(trait ~ Sex + group, data = cross$pheno)))
+  print(anova(lm(mediator ~ Sex + group, data = cross$pheno)))
+  print(anova(lm(trait ~ Sex + mediator + group, data = cross$pheno)))
+  print(anova(lm(mediator ~ Sex + trait + group, data = cross$pheno)))
+}
+
 # =====Plotting functions
 # Taken from atg.r written by Dr. Gary Churchill and refactored slightly
 
@@ -148,14 +172,15 @@ triple.fit <- function(X, Y, Q) {
 # ============================
 
 dpi <- 300
-png("images/genecor_graphs_%d.png", width=8*dpi, height=11*dpi, res=dpi)
-#pdf("genecor_graphs.pdf", 8.5, 11)
+png("images/genecor_graphs_%d.png", width = 8 * dpi,
+    height = 11 * dpi, res = dpi)
 
 pheno <- c("INS.10wk")
 genes <- c("Irx3", "Sirt1", "Foxo1", "Pdx1", "Ppargc1a")
 cond_genes <- c("Cmpk2", "Cog5", "Lpin1")
 # and others, there's no upper limit other than practical
 
+# Uncomment these based on which tissue you want to investigate
 islet_expression <- lapply(genes, load_islet)
 #kidney_expression <- lapply(genes, load_tissue, kidney.rz)
 #liver_expression <- lapply(genes, load_tissue, liver.rz)
@@ -164,13 +189,15 @@ names(islet_expression) <- sapply(genes, paste0, "_islet", USE.NAMES=FALSE)
 #names(kidney_expression) <- sapply(genes, paste0, "_kidney", USE.NAMES=FALSE)
 cond_ids <- match(cond_genes, annot$gene1, nomatch=0)
 
-expressions <- islet_expression#c(islet_expression, kidney_expression, liver_expression)
+expressions <- islet_expression
+# If you use multiple expressions, combine them as so:
+# c(islet_expression, kidney_expression, liver_expression)
 
 genes <- names(expressions)
 # Non-destructive, we don't have to reload f2g$pheno if we screw up
 cross <- f2g
 cross$pheno <- prepare_for_scan(pheno, expressions)
-names(cross$pheno)[4] = "INS.10wk"
+names(cross$pheno)[4] <- "INS.10wk"
 # 4 in 4:length(cross) is a magic number, we don't want the first 3 for pairwise scans
 pairs(cross$pheno[, 4:length(cross$pheno)],
       upper.panel = panel.cor, diag.panel = panel.hist)
@@ -232,7 +259,8 @@ names(cross$pheno)[range] <- annot$gene1[match(names(cross$pheno)[range],
                                          annot$a_gene_id)]
 
 # Run conditional scans on all the conditional genes with our phenotypes of interest
-cond_scans <- lapply(cond_genes, scan_cond_gene, c("INS.10wk", "Sirt1_islet", "Irx3_islet"))
+cond_scans <- lapply(cond_genes, scan_cond_gene,
+                     c("INS.10wk", "Sirt1_islet", "Irx3_islet"))
 
 gene_idx <- 0
 
@@ -248,21 +276,21 @@ for (i in cond_scans)  {
                 lty = "dashed", lwd = 2, col = "orange")
   add.threshold(scan1, perms = perm1, alpha = 0.10,
                 lty = "dashed", lwd = 2, col = "purple")
-  
+
   plot(scan1, lodcolumn = 3)
   title("Sirt1 expression")
   add.threshold(scan1, perms = perm1, alpha = 0.05,
                 lty = "dashed", lwd = 2, col = "orange")
   add.threshold(scan1, perms = perm1, alpha = 0.10,
                 lty = "dashed", lwd = 2, col = "purple")
-  
+
   plot(scan1, lodcolumn = 2)
   title("Irx3 expression")
   add.threshold(scan1, perms = perm1, alpha = 0.05,
                 lty = "dashed", lwd = 2, col = "orange")
   add.threshold(scan1, perms = perm1, alpha = 0.10,
                 lty = "dashed", lwd = 2, col = "purple")
-  
+
   gene_idx <- gene_idx + 1
   for (k in 1:(length(i) - 2)) {
     plot(i, lodcolumn=k)
@@ -293,43 +321,12 @@ cross$pheno <- transform(cross$pheno,
       Q12 = as.factor(cross$geno[[12]]$data[,find.marker(cross,12,9.77)]))
 levels(cross$pheno$Q12) <- c("B", "H", "R")
 
-qplots <- function(traitx, traity, group, ...)	{
-  qplot(traitx, traity, color=group, shape=cross$pheno$Sex, ...) +
-  geom_smooth(aes(group=group),method="lm",se=FALSE)
-}
+# These are for our genes of interest, edit them as needed
 
-anovae <- function(trait, mediator)  {
-  print(anova(lm(trait ~ Sex + Q12, data=cross$pheno)))
-  print(anova(lm(mediator ~ Sex + Q12, data=cross$pheno)))
-  print(anova(lm(trait ~ Sex + mediator + Q12, data=cross$pheno)))
-  print(anova(lm(mediator ~ Sex + trait + Q12, data=cross$pheno)))
-}
+with(cross$pheno, print(anovae(Sirt1_islet, Cmpk2)))
+with(cross$pheno, print(anovae(Sirt1_islet, Cog5)))
 
-
-
-#print(qplot(sirt1, cmpk2, color=q12, shape=sex, data=cross$pheno) +
-#  geom_smooth(aes(group=q12),method="lm",se=false))
 with(cross$pheno, print(qplots(Sirt1_islet, Cmpk2, Q12)))
 with(cross$pheno, print(qplots(Sirt1_islet, Cog5, Q12)))
-#print(qplot(ins.10wk, cmpk2, color=q12, shape=sex, data=cross$pheno) +
-#  geom_smooth(aes(group=q12),method="lm",se=false))
-
-#print(qplot(sirt1, lpin1, color=q12, shape=sex, data=cross$pheno) +
-#  geom_smooth(aes(group=q12),method="lm",se=false))
-#
-#print(qplot(ins.10wk, lpin1, color=q12, shape=sex, data=cross$pheno) +
-#  geom_smooth(aes(group=q12),method="lm",se=false))
-#
-#print(qplot(sirt1, cog5, color=q12, shape=sex, data=cross$pheno) +
-#  geom_smooth(aes(group=q12),method="lm",se=false))
-#
-#print(qplot(ins.10wk, cog5, color=q12, shape=sex, data=cross$pheno) +
-#  geom_smooth(aes(group=q12),method="lm",se=false))
-#
-#print(qplot(irx3, lpin1, color=q12, shape=sex, data=cross$pheno) +
-#  geom_smooth(aes(group=q12),method="lm",se=false))
-#
-#print(qplot(Irx3, Cog5, color=Q12, shape=Sex, data=cross$pheno) +
-#  geom_smooth(aes(group=Q12),method="lm",se=FALSE))
 
 dev.off()
