@@ -148,12 +148,12 @@ triple.fit <- function(X, Y, Q) {
 # ============================
 
 dpi <- 300
-png("images/genecor_graphs_%d.png", width=6*dpi, height=6*dpi, res=dpi)
+png("images/genecor_graphs_%d.png", width=8*dpi, height=11*dpi, res=dpi)
 #pdf("genecor_graphs.pdf", 8.5, 11)
 
 pheno <- c("INS.10wk")
 genes <- c("Irx3", "Sirt1", "Foxo1", "Pdx1", "Ppargc1a")
-cond_genes <- c("Myt1l", "Cmpk2", "Cog5", "Colec11", "Efcab10", "Lpin1")
+cond_genes <- c("Cmpk2", "Cog5", "Lpin1")
 # and others, there's no upper limit other than practical
 
 islet_expression <- lapply(genes, load_islet)
@@ -232,12 +232,12 @@ names(cross$pheno)[range] <- annot$gene1[match(names(cross$pheno)[range],
                                          annot$a_gene_id)]
 
 # Run conditional scans on all the conditional genes with our phenotypes of interest
-cond_scans <- lapply(cond_genes, scan_cond_gene, c("INS.10wk", "Sirt1_islet", "Pdx1_islet", "Foxo1_islet"))
+cond_scans <- lapply(cond_genes, scan_cond_gene, c("INS.10wk", "Sirt1_islet", "Irx3_islet"))
 
 gene_idx <- 0
 
 # Now we're gonna plot expression vs conditioned
-par(mfcol=c(4, 2))
+par(mfcol=c(3, 2))
 
 # Magic number exists for the same reason as before
 for (i in cond_scans)  {
@@ -256,19 +256,13 @@ for (i in cond_scans)  {
   add.threshold(scan1, perms = perm1, alpha = 0.10,
                 lty = "dashed", lwd = 2, col = "purple")
   
-  plot(scan1, lodcolumn = 5)
-  title("Pdx1 expression")
+  plot(scan1, lodcolumn = 2)
+  title("Irx3 expression")
   add.threshold(scan1, perms = perm1, alpha = 0.05,
                 lty = "dashed", lwd = 2, col = "orange")
   add.threshold(scan1, perms = perm1, alpha = 0.10,
                 lty = "dashed", lwd = 2, col = "purple")
   
-  plot(scan1, lodcolumn = 4)
-  title("Foxo1 expression")
-  add.threshold(scan1, perms = perm1, alpha = 0.05,
-                lty = "dashed", lwd = 2, col = "orange")
-  add.threshold(scan1, perms = perm1, alpha = 0.10,
-                lty = "dashed", lwd = 2, col = "purple")
   gene_idx <- gene_idx + 1
   for (k in 1:(length(i) - 2)) {
     plot(i, lodcolumn=k)
